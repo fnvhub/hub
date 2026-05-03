@@ -1,0 +1,18 @@
+{
+  "proyecto": "HUB Personal",
+  "version_actual": "1.4.1",
+  "historial": [
+    {
+      "version": "1.4.1",
+      "fecha": "2026-05-03",
+      "archivos": ["hub-resto.js", "index.html"],
+      "cambios": "Plantilla del email de notificación de horas sindicales editable desde Ajustes. Se puede personalizar el cuerpo del mensaje con marcadores {{horas}}, {{fechas}} y {{nombre}}. Botón para restaurar el texto por defecto."
+    },
+    {
+      "version": "1.4.0",
+      "fecha": "2026-04-01",
+      "archivos": ["index.html", "hub-core.js", "hub-km.js", "hub-resto.js", "hub.css"],
+      "cambios": "Versión inicial documentada. Control de kilómetros, vacaciones y horas sindicales. Sincronización Firebase. PWA instalable."
+    }
+  ]
+}

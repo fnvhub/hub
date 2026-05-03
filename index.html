@@ -13,342 +13,315 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="hub.css">
-
 <!-- Firebase -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-  const firebaseConfig = {
-    apiKey: "AIzaSyCcBdxFrKebUG7S6lexT_lE3FyjPmFaBdQ",
-    authDomain: "hub-personal-fnv.firebaseapp.com",
-    databaseURL: "https://hub-personal-fnv-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "hub-personal-fnv",
-    storageBucket: "hub-personal-fnv.firebasestorage.app",
-    messagingSenderId: "29407902329",
-    appId: "1:29407902329:web:1465988c264b4884e6b2a8"
-  };
-  const app = initializeApp(firebaseConfig);
-  const db  = getDatabase(app);
-  const DATA_REF = 'hub/data';
-  let syncEnabled=true, lastLocalSave=0, ignoreNextRemote=false;
-  window.syncToCloud = function(stateData) {
-    if (!syncEnabled) return;
-    ignoreNextRemote = true;
-    set(ref(db,DATA_REF),{ data:JSON.stringify(stateData), ts:Date.now() })
-      .then(()=>showSyncStatus('✅ Sincronizado','green'))
-      .catch(()=>showSyncStatus('⚠️ Error sync','orange'));
-  };
-  onValue(ref(db,DATA_REF), snapshot=>{
-    if (ignoreNextRemote) { ignoreNextRemote=false; return; }
-    const val = snapshot.val();
-    if (!val||!val.data) return;
-    if (val.ts && val.ts > lastLocalSave+3000) {
-      try {
-        const remote = JSON.parse(val.data);
-        if (typeof window.mergeRemoteState==='function') {
-          window.mergeRemoteState(remote);
-          showSyncStatus('🔄 Datos recibidos','blue');
-        }
-      } catch(e) {}
-    }
-  });
-  window.setSyncEnabled  = on => { syncEnabled=on; showSyncStatus(on?'☁️ Sync activado':'📴 Sync desactivado', on?'green':'gray'); };
-  window.setLastLocalSave= ts => { lastLocalSave=ts; };
-  function showSyncStatus(msg,color) {
-    const colors={green:'var(--accent2)',blue:'var(--accent)',orange:'var(--accent3)',gray:'var(--text3)'};
-    const el=document.getElementById('sync-status');
-    if(el){ el.textContent=msg; el.style.color=colors[color]||'var(--text2)'; }
-  }
-  window.setSyncEnabled(true);
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+const firebaseConfig = {
+apiKey: "AIzaSyCcBdxFrKebUG7S6lexT_lE3FyjPmFaBdQ",
+authDomain: "hub-personal-fnv.firebaseapp.com",
+databaseURL: "https://hub-personal-fnv-default-rtdb.europe-west1.firebasedatabase.app",
+projectId: "hub-personal-fnv",
+storageBucket: "hub-personal-fnv.firebasestorage.app",
+messagingSenderId: "29407902329",
+appId: "1:29407902329:web:1465988c264b4884e6b2a8"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const DATA_REF = 'hub/data';
+let syncEnabled=true, lastLocalSave=0, ignoreNextRemote=false;
+window.syncToCloud = function(stateData) {
+if (!syncEnabled) return;
+ignoreNextRemote = true;
+set(ref(db,DATA_REF),{ data:JSON.stringify(stateData), ts:Date.now() })
+.then(()=>showSyncStatus('✅ Sincronizado','green'))
+.catch(()=>showSyncStatus('⚠️ Error sync','orange'));
+};
+onValue(ref(db,DATA_REF), snapshot=>{
+if (ignoreNextRemote) { ignoreNextRemote=false; return; }
+const val = snapshot.val();
+if (!val||!val.data) return;
+if (val.ts && val.ts > lastLocalSave+3000) {
+try {
+const remote = JSON.parse(val.data);
+if (typeof window.mergeRemoteState==='function') {
+window.mergeRemoteState(remote);
+showSyncStatus('🔄 Datos recibidos','blue');
+}
+} catch(e) {}
+}
+});
+window.setSyncEnabled = on => { syncEnabled=on; showSyncStatus(on?'☁️ Sync activado':'📴 Sync desactivado', on?'green':'gray'); };
+window.setLastLocalSave= ts => { lastLocalSave=ts; };
+function showSyncStatus(msg,color) {
+const colors={green:'var(--accent2)',blue:'var(--accent)',orange:'var(--accent3)',gray:'var(--text3)'};
+const el=document.getElementById('sync-status');
+if(el){ el.textContent=msg; el.style.color=colors[color]||'var(--text2)'; }
+}
+window.setSyncEnabled(true);
 </script>
 </head>
 <body>
 <div id="app">
-
-  <!-- HEADER -->
-  <div id="header">
-    <div id="header-title">HUB <span>Personal</span><span class="version-badge">v1.4.0</span></div>
-    <div style="text-align:center;flex:1">
-      <div id="header-date" style="font-size:11px;color:var(--text2);font-weight:500"></div>
-      <div id="sync-status" style="font-size:10px;color:var(--text3);margin-top:1px">☁️ Sync activado</div>
-    </div>
-    <div style="width:34px"></div>
-  </div>
-
-  <!-- CONTENT -->
-  <div id="content">
-
-    <!-- ═══ DASHBOARD ═══ -->
-    <div id="tab-dash" class="tab-panel active">
-      <div class="section-title">Resumen</div>
-      <div class="section-sub" id="dash-greeting">Buenos días, Francisco</div>
-      <div id="dash-alerts"></div>
-      <div class="overview-grid">
-        <div class="ov-card ov-km" onclick="switchTab('km')">
-          <div class="ov-icon">🚗</div>
-          <div class="ov-val" id="ov-km-val">—</div>
-          <div class="ov-lbl">KM empresa mes</div>
-          <div class="ov-sub" id="ov-km-sub">Tap para ver</div>
-        </div>
-        <div class="ov-card ov-vac" onclick="switchTab('vac')">
-          <div class="ov-icon">🏖️</div>
-          <div class="ov-val" id="ov-vac-val">—</div>
-          <div class="ov-lbl">Días vacaciones</div>
-          <div class="ov-sub" id="ov-vac-sub">Tap para ver</div>
-        </div>
-        <div class="ov-card ov-hrs" onclick="switchTab('hrs')" style="grid-column:span 2">
-          <div style="display:flex;align-items:center;gap:14px">
-            <div>
-              <div class="ov-icon">🏛️</div>
-              <div class="ov-val" id="ov-hrs-val">—</div>
-              <div class="ov-lbl">Horas comité libres</div>
-              <div class="ov-sub" id="ov-hrs-sub">Tap para ver</div>
-            </div>
-            <div style="flex:1;height:6px;background:var(--card2);border-radius:99px;overflow:hidden">
-              <div id="ov-hrs-bar" style="height:100%;border-radius:99px;background:var(--accent3);transition:width .5s;width:0%"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title">Acciones rápidas</div>
-        <div class="grid2" style="gap:8px">
-          <button class="btn btn-ghost btn-full" style="font-size:13px" onclick="openModal('modal-km-add')">🚗 Añadir KM</button>
-          <button class="btn btn-ghost btn-full" style="font-size:13px" onclick="openModal('modal-ocr')">📷 Foto odómetro</button>
-          <button class="btn btn-ghost btn-full" style="font-size:13px" onclick="openModal('modal-vac-add')">🏖️ Vacaciones</button>
-          <button class="btn btn-ghost btn-full" style="font-size:13px" onclick="openModal('modal-hrs-add')">⏰ Horas comité</button>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title">Actividad reciente</div>
-        <div id="dash-recent"><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px 0">Sin actividad aún</div></div>
-      </div>
-    </div>
-
-    <!-- ═══ KILÓMETROS ═══ -->
-    <div id="tab-km" class="tab-panel">
-      <div class="section-title">Kilómetros</div>
-      <div class="section-sub">Historial navegable · Exporta cualquier mes</div>
-
-      <div class="card">
-        <!-- La cabecera del mes se inyecta dinámicamente con botones ‹ › -->
-        <div class="card-title" id="km-month-label" style="padding:0"></div>
-        <div class="grid3">
-          <div class="mini-card"><div class="mc-val" id="km-total-val">0</div><div class="mc-label">KM totales</div></div>
-          <div class="mini-card"><div class="mc-val" id="km-biz-val">0</div><div class="mc-label">Empresa</div></div>
-          <div class="mini-card"><div class="mc-val" id="km-priv-val" style="color:var(--accent4)">0</div><div class="mc-label">Privados</div></div>
-        </div>
-        <div class="prog-wrap"><div class="prog-bar" id="km-prog" style="width:0%"></div></div>
-        <div class="prog-labels"><span id="km-odometer-label">Odómetro: —</span><span id="km-last-date">—</span></div>
-      </div>
-
-      <div id="km-private-warn" class="alert-banner alert-warning" style="display:none">
-        <span class="ab-icon">🔐</span><span>Tienes KM privados este mes. Se ocultan en el XLS.</span>
-      </div>
-      <div id="km-missing-warn" class="alert-banner alert-info" style="display:none">
-        <span class="ab-icon">📅</span><span id="km-missing-text"></span>
-      </div>
-
-      <!-- Solo visible en mes actual -->
-      <div class="grid2" id="km-add-btns" style="margin-bottom:12px">
-        <button class="btn btn-primary btn-full" onclick="openModal('modal-km-add')">+ Añadir manual</button>
-        <button class="btn btn-ghost btn-full" onclick="openModal('modal-ocr')">📷 Foto odómetro</button>
-      </div>
-
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div class="card-title" style="margin-bottom:0">Registros del mes</div>
-          <button class="btn btn-ghost btn-sm" onclick="exportKmXLS()">📊 Exportar XLS</button>
-        </div>
-        <div id="km-log"><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px 0">Sin registros este mes</div></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Historial 14 meses</div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Toca un mes para verlo · 📊 para exportar su XLS</div>
-        <div id="km-history"><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px 0">Sin historial</div></div>
-      </div>
-    </div>
-
-    <!-- ═══ VACACIONES ═══ -->
-    <div id="tab-vac" class="tab-panel">
-      <div class="section-title">Vacaciones</div>
-      <div class="section-sub">Control de días anuales</div>
-      <div class="card">
-        <div class="card-title">Balance <span id="vac-year-label"></span></div>
-        <div class="grid3">
-          <div class="mini-card"><div class="mc-val" id="vac-total-val" style="color:var(--accent2)">—</div><div class="mc-label">Disponibles</div></div>
-          <div class="mini-card"><div class="mc-val" id="vac-used-val">—</div><div class="mc-label">Usados</div></div>
-          <div class="mini-card"><div class="mc-val" id="vac-extra-val" style="color:var(--accent3)">—</div><div class="mc-label">Extras</div></div>
-        </div>
-        <div class="prog-wrap"><div class="prog-bar" id="vac-prog" style="background:var(--accent2);width:0%"></div></div>
-        <div class="prog-labels"><span id="vac-prog-left">Quedan — días</span><span id="vac-prog-total">de — totales</span></div>
-      </div>
-      <div class="alert-banner alert-info">
-        <span class="ab-icon">ℹ️</span><span>Los días extra (festivos/fines de semana trabajados) se descuentan <strong>primero</strong>.</span>
-      </div>
-      <div class="grid2" style="margin-bottom:12px">
-        <button class="btn btn-success btn-full" onclick="openModal('modal-vac-add')">🏖️ Añadir vacaciones</button>
-        <button class="btn btn-warning btn-full" onclick="openModal('modal-worked-add')">🛠️ Día trabajado</button>
-      </div>
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <div class="card-title" style="margin-bottom:0">Calendario</div>
-          <div style="display:flex;gap:6px">
-            <button class="btn btn-ghost btn-sm" onclick="vacCalPrev()">‹</button>
-            <button class="btn btn-ghost btn-sm" id="vac-cal-month-btn" style="min-width:80px">—</button>
-            <button class="btn btn-ghost btn-sm" onclick="vacCalNext()">›</button>
-          </div>
-        </div>
-        <div class="vac-cal" id="vac-cal"></div>
-        <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap">
-          <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)"><span style="width:9px;height:9px;background:rgba(79,142,247,.35);border-radius:3px;display:inline-block"></span>Vacaciones</span>
-          <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)"><span style="width:9px;height:9px;background:rgba(249,169,75,.25);border-radius:3px;display:inline-block"></span>Día trabajado</span>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title">Historial de períodos</div>
-        <div id="vac-history"><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px 0">Sin períodos registrados</div></div>
-      </div>
-    </div>
-
-    <!-- ═══ HORAS COMITÉ ═══ -->
-    <div id="tab-hrs" class="tab-panel">
-      <div class="section-title">Horas Comité</div>
-      <div class="section-sub">Horas sindicales mensuales</div>
-      <div id="hrs-alerts"></div>
-      <div class="card">
-        <div class="card-title" id="hrs-month-label">—</div>
-        <div class="ring-container">
-          <svg class="ring-svg" width="130" height="130" viewBox="0 0 130 130">
-            <circle cx="65" cy="65" r="54" fill="none" stroke="var(--card2)" stroke-width="11"/>
-            <circle id="hrs-ring" cx="65" cy="65" r="54" fill="none" stroke="var(--accent3)" stroke-width="11"
-              stroke-linecap="round" stroke-dasharray="339.3" stroke-dashoffset="339.3"
-              style="transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)"/>
-          </svg>
-          <div class="ring-text">
-            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:var(--text)" id="hrs-ring-used">0</div>
-            <div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.4px">de <span id="hrs-ring-total">25</span>h</div>
-          </div>
-        </div>
-        <div class="grid3" style="margin-top:10px">
-          <div class="mini-card"><div class="mc-val" id="hrs-used-val" style="color:var(--accent3)">0</div><div class="mc-label">Usadas</div></div>
-          <div class="mini-card"><div class="mc-val" id="hrs-left-val">25</div><div class="mc-label">Libres</div></div>
-          <div class="mini-card"><div class="mc-val" id="hrs-total-val">25</div><div class="mc-label">Total mes</div></div>
-        </div>
-      </div>
-      <div class="grid2" style="margin-bottom:12px">
-        <button class="btn btn-warning btn-full" onclick="openModal('modal-hrs-add')">⏰ Coger horas</button>
-        <button class="btn btn-ghost btn-full" onclick="openModal('modal-hrs-email')">📧 Notificar</button>
-      </div>
-      <div class="card">
-        <div class="card-title">Registros del mes</div>
-        <div id="hrs-log"><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px 0">Sin registros este mes</div></div>
-      </div>
-      <div class="card">
-        <div class="card-title">Historial mensual</div>
-        <div id="hrs-history"><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px 0">Sin historial</div></div>
-      </div>
-    </div>
-
-    <!-- ═══ AJUSTES ═══ -->
-    <div id="tab-cfg" class="tab-panel">
-      <div class="section-title">Ajustes</div>
-      <div class="section-sub">Configuración y copia de seguridad</div>
-      <div class="card">
-        <div class="card-title">General</div>
-        <div class="settings-row"><div class="sr-info"><div class="sr-label">Nombre</div><div class="sr-sub" id="cfg-name-disp">Francisco Núñez</div></div><div class="sr-action" onclick="openModal('modal-cfg-name')">Editar</div></div>
-        <div class="settings-row"><div class="sr-info"><div class="sr-label">Email notificaciones</div><div class="sr-sub" id="cfg-email-disp">No configurado</div></div><div class="sr-action" onclick="openModal('modal-cfg-email')">Editar</div></div>
-      </div>
-      <div class="card">
-        <div class="card-title">Kilómetros</div>
-        <div class="settings-row"><div class="sr-info"><div class="sr-label">Ciudad base</div><div class="sr-sub" id="cfg-city-disp">Málaga</div></div><div class="sr-action" onclick="openModal('modal-cfg-city')">Editar</div></div>
-        <div class="settings-row"><div class="sr-info"><div class="sr-label">Odómetro inicial</div><div class="sr-sub" id="cfg-km-init-disp">No configurado</div></div><div class="sr-action" onclick="openModal('modal-cfg-km')">Editar</div></div>
-        <div class="settings-row"><div class="sr-info"><div class="sr-label">Patrón de trabajo</div><div class="sr-sub" id="cfg-pattern-disp">Mar, Mié, Jue (ruta)</div></div><div class="sr-action" onclick="openModal('modal-cfg-pattern')">Editar</div></div>
-      </div>
-      <div class="card">
-        <div class="card-title">Vacaciones</div>
-        <div class="settings-row"><div class="sr-info"><div class="sr-label">Días anuales</div><div class="sr-sub" id="cfg-vac-days-disp">22 días</div></div><div class="sr-action" onclick="openModal('modal-cfg-vac')">Editar</div></div>
-      </div>
-      <div class="card">
-        <div class="card-title">Horas Comité</div>
-        <div class="settings-row"><div class="sr-info"><div class="sr-label">Horas mensuales</div><div class="sr-sub" id="cfg-hrs-monthly-disp">25 horas</div></div><div class="sr-action" onclick="openModal('modal-cfg-hrs')">Editar</div></div>
-      </div>
-      <div class="card">
-        <div class="card-title">Modo público</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5">Oculta los KM privados. Sin indicadores visibles. Solo se controla desde aquí.</div>
-        <div class="switch-row" style="padding:0">
-          <div><div class="switch-label">Activar modo público</div><div class="switch-sub">Los datos privados quedan ocultos</div></div>
-          <label class="switch"><input type="checkbox" id="pub-mode-sw" onchange="togglePublicMode(this.checked)"><div class="switch-track"></div><div class="switch-thumb"></div></label>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title">Copia de seguridad</div>
-        <div class="settings-row" style="padding-top:0"><div class="sr-info"><div class="sr-label">Última copia</div><div class="sr-sub" id="cfg-backup-date">Nunca</div></div></div>
-        <div class="grid2">
-          <button class="btn btn-primary btn-full" onclick="doBackup()">💾 Hacer copia</button>
-          <button class="btn btn-ghost btn-full" onclick="doImport()">📂 Importar</button>
-        </div>
-        <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
-      </div>
-      <div class="card">
-        <div class="card-title">Sincronización</div>
-        <div class="alert-banner alert-success" style="margin-bottom:12px">
-          <span class="ab-icon">☁️</span><span>Sincronización automática activa entre móvil y tablet vía Firebase.</span>
-        </div>
-        <div class="switch-row" style="padding:0">
-          <div><div class="switch-label">Sincronización automática</div><div class="switch-sub" id="sync-status-cfg">Activa — cambios en tiempo real</div></div>
-          <label class="switch"><input type="checkbox" id="sync-toggle" checked><div class="switch-track"></div><div class="switch-thumb"></div></label>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title">Instalar app</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5">Instala HUB Personal como app en tu dispositivo.</div>
-        <button class="btn btn-primary btn-full" id="btn-install-pwa" style="display:none" onclick="installPWA()">📲 Instalar en este dispositivo</button>
-        <div style="font-size:12px;color:var(--text3);margin-top:8px">Si el botón no aparece: menú del navegador → "Añadir a pantalla de inicio"</div>
-      </div>
-      <div class="card">
-        <div class="card-title" style="color:var(--accent4)">Zona peligrosa</div>
-        <button class="btn btn-red-soft btn-full" onclick="confirmReset()">🗑️ Borrar todos los datos</button>
-      </div>
-      <div style="text-align:center;padding:18px 0;color:var(--text3);font-size:11px">
-        HUB Personal v1.4.0 · Abril 2026<br>Datos almacenados localmente · Sync Firebase
-      </div>
-    </div>
-
-  </div><!-- /content -->
-
-  <!-- TABS -->
-  <div id="tabs">
-    <button class="tab-btn active" onclick="switchTab('dash')" id="tbtn-dash"><span class="icon">🏠</span><span>Inicio</span></button>
-    <button class="tab-btn" onclick="switchTab('km')"   id="tbtn-km"><span class="icon">🚗</span><span>KM</span></button>
-    <button class="tab-btn" onclick="switchTab('vac')"  id="tbtn-vac"><span class="icon">🏖️</span><span>Vacaciones</span></button>
-    <button class="tab-btn" onclick="switchTab('hrs')"  id="tbtn-hrs"><span class="icon">🏛️</span><span>Comité</span></button>
-    <button class="tab-btn" onclick="switchTab('cfg')"  id="tbtn-cfg"><span class="icon">⚙️</span><span>Ajustes</span></button>
-  </div>
+<!-- HEADER -->
+<div id="header">
+<div id="header-title">HUB <span>Personal</span><span class="version-badge">v1.4.0</span></div>
+<div style="text-align:center;flex:1">
+<div id="header-date" style="font-size:11px;color:var(--text2);font-weight:500"></div>
+<div id="sync-status" style="font-size:10px;color:var(--text3);margin-top:1px">☁️ Sync activado</div>
+</div>
+<div style="width:34px"></div>
+</div>
+<!-- CONTENT -->
+<div id="content">
+<!-- ═══ DASHBOARD ═══ -->
+<div id="tab-dash" class="tab-panel active">
+<div class="section-title">Resumen</div>
+<div class="section-sub" id="dash-greeting">Buenos días, Francisco</div>
+<div id="dash-alerts"></div>
+<div class="overview-grid">
+<div class="ov-card ov-km" onclick="switchTab('km')">
+<div class="ov-icon">🚗</div>
+<div class="ov-val" id="ov-km-val">—</div>
+<div class="ov-lbl">KM empresa mes</div>
+<div class="ov-sub" id="ov-km-sub">Tap para ver</div>
+</div>
+<div class="ov-card ov-vac" onclick="switchTab('vac')">
+<div class="ov-icon">🏖️</div>
+<div class="ov-val" id="ov-vac-val">—</div>
+<div class="ov-lbl">Días vacaciones</div>
+<div class="ov-sub" id="ov-vac-sub">Tap para ver</div>
+</div>
+<div class="ov-card ov-hrs" onclick="switchTab('hrs')" style="grid-column:span 2">
+<div style="display:flex;align-items:center;gap:14px">
+<div>
+<div class="ov-icon">🏛️</div>
+<div class="ov-val" id="ov-hrs-val">—</div>
+<div class="ov-lbl">Horas comité libres</div>
+<div class="ov-sub" id="ov-hrs-sub">Tap para ver</div>
+</div>
+<div style="flex:1;height:6px;background:var(--card2);border-radius:99px;overflow:hidden">
+<div id="ov-hrs-bar" style="height:100%;border-radius:99px;background:var(--accent3);transition:width .5s;width:0%"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="card-title">Acciones rápidas</div>
+<div class="grid2" style="gap:8px">
+<button class="btn btn-ghost btn-full" style="font-size:13px" onclick="openModal('modal-km-add')">🚗 Añadir KM</button>
+<button class="btn btn-ghost btn-full" style="font-size:13px" onclick="openModal('modal-ocr')">📷 Foto odómetro</button>
+<button class="btn btn-ghost btn-full" style="font-size:13px" onclick="openModal('modal-vac-add')">🏖️ Vacaciones</button>
+<button class="btn btn-ghost btn-full" style="font-size:13px" onclick="openModal('modal-hrs-add')">⏰ Horas comité</button>
+</div>
+</div>
+<div class="card">
+<div class="card-title">Actividad reciente</div>
+<div id="dash-recent"><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px 0">Sin actividad aún</div></div>
+</div>
+</div>
+<!-- ═══ KILÓMETROS ═══ -->
+<div id="tab-km" class="tab-panel">
+<div class="section-title">Kilómetros</div>
+<div class="section-sub">Historial navegable · Exporta cualquier mes</div>
+<div class="card">
+<div class="card-title" id="km-month-label" style="padding:0"></div>
+<div class="grid3">
+<div class="mini-card"><div class="mc-val" id="km-total-val">0</div><div class="mc-label">KM totales</div></div>
+<div class="mini-card"><div class="mc-val" id="km-biz-val">0</div><div class="mc-label">Empresa</div></div>
+<div class="mini-card"><div class="mc-val" id="km-priv-val" style="color:var(--accent4)">0</div><div class="mc-label">Privados</div></div>
+</div>
+<div class="prog-wrap"><div class="prog-bar" id="km-prog" style="width:0%"></div></div>
+<div class="prog-labels"><span id="km-odometer-label">Odómetro: —</span><span id="km-last-date">—</span></div>
+</div>
+<div id="km-private-warn" class="alert-banner alert-warning" style="display:none">
+<span class="ab-icon">🔐</span><span>Tienes KM privados este mes. Se ocultan en el XLS.</span>
+</div>
+<div id="km-missing-warn" class="alert-banner alert-info" style="display:none">
+<span class="ab-icon">📅</span><span id="km-missing-text"></span>
+</div>
+<div class="grid2" id="km-add-btns" style="margin-bottom:12px">
+<button class="btn btn-primary btn-full" onclick="openModal('modal-km-add')">+ Añadir manual</button>
+<button class="btn btn-ghost btn-full" onclick="openModal('modal-ocr')">📷 Foto odómetro</button>
+</div>
+<div class="card">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+<div class="card-title" style="margin-bottom:0">Registros del mes</div>
+<button class="btn btn-ghost btn-sm" onclick="exportKmXLS()">📊 Exportar XLS</button>
+</div>
+<div id="km-log"><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px 0">Sin registros este mes</div></div>
+</div>
+<div class="card">
+<div class="card-title">Historial 14 meses</div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:8px">Toca un mes para verlo · 📊 para exportar su XLS</div>
+<div id="km-history"><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px 0">Sin historial</div></div>
+</div>
+</div>
+<!-- ═══ VACACIONES ═══ -->
+<div id="tab-vac" class="tab-panel">
+<div class="section-title">Vacaciones</div>
+<div class="section-sub">Control de días anuales</div>
+<div class="card">
+<div class="card-title">Balance <span id="vac-year-label"></span></div>
+<div class="grid3">
+<div class="mini-card"><div class="mc-val" id="vac-total-val" style="color:var(--accent2)">—</div><div class="mc-label">Disponibles</div></div>
+<div class="mini-card"><div class="mc-val" id="vac-used-val">—</div><div class="mc-label">Usados</div></div>
+<div class="mini-card"><div class="mc-val" id="vac-extra-val" style="color:var(--accent3)">—</div><div class="mc-label">Extras</div></div>
+</div>
+<div class="prog-wrap"><div class="prog-bar" id="vac-prog" style="background:var(--accent2);width:0%"></div></div>
+<div class="prog-labels"><span id="vac-prog-left">Quedan — días</span><span id="vac-prog-total">de — totales</span></div>
+</div>
+<div class="alert-banner alert-info">
+<span class="ab-icon">ℹ️</span><span>Los días extra (festivos/fines de semana trabajados) se descuentan <strong>primero</strong>.</span>
+</div>
+<div class="grid2" style="margin-bottom:12px">
+<button class="btn btn-success btn-full" onclick="openModal('modal-vac-add')">🏖️ Añadir vacaciones</button>
+<button class="btn btn-warning btn-full" onclick="openModal('modal-worked-add')">🛠️ Día trabajado</button>
+</div>
+<div class="card">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+<div class="card-title" style="margin-bottom:0">Calendario</div>
+<div style="display:flex;gap:6px">
+<button class="btn btn-ghost btn-sm" onclick="vacCalPrev()">‹</button>
+<button class="btn btn-ghost btn-sm" id="vac-cal-month-btn" style="min-width:80px">—</button>
+<button class="btn btn-ghost btn-sm" onclick="vacCalNext()">›</button>
+</div>
+</div>
+<div class="vac-cal" id="vac-cal"></div>
+<div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap">
+<span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)"><span style="width:9px;height:9px;background:rgba(79,142,247,.35);border-radius:3px;display:inline-block"></span>Vacaciones</span>
+<span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)"><span style="width:9px;height:9px;background:rgba(249,169,75,.25);border-radius:3px;display:inline-block"></span>Día trabajado</span>
+</div>
+</div>
+<div class="card">
+<div class="card-title">Historial de períodos</div>
+<div id="vac-history"><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px 0">Sin períodos registrados</div></div>
+</div>
+</div>
+<!-- ═══ HORAS COMITÉ ═══ -->
+<div id="tab-hrs" class="tab-panel">
+<div class="section-title">Horas Comité</div>
+<div class="section-sub">Horas sindicales mensuales</div>
+<div id="hrs-alerts"></div>
+<div class="card">
+<div class="card-title" id="hrs-month-label">—</div>
+<div class="ring-container">
+<svg class="ring-svg" width="130" height="130" viewBox="0 0 130 130">
+<circle cx="65" cy="65" r="54" fill="none" stroke="var(--card2)" stroke-width="11"/>
+<circle id="hrs-ring" cx="65" cy="65" r="54" fill="none" stroke="var(--accent3)" stroke-width="11"
+stroke-linecap="round" stroke-dasharray="339.3" stroke-dashoffset="339.3"
+style="transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)"/>
+</svg>
+<div class="ring-text">
+<div style="font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:var(--text)" id="hrs-ring-used">0</div>
+<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.4px">de <span id="hrs-ring-total">25</span>h</div>
+</div>
+</div>
+<div class="grid3" style="margin-top:10px">
+<div class="mini-card"><div class="mc-val" id="hrs-used-val" style="color:var(--accent3)">0</div><div class="mc-label">Usadas</div></div>
+<div class="mini-card"><div class="mc-val" id="hrs-left-val">25</div><div class="mc-label">Libres</div></div>
+<div class="mini-card"><div class="mc-val" id="hrs-total-val">25</div><div class="mc-label">Total mes</div></div>
+</div>
+</div>
+<div class="grid2" style="margin-bottom:12px">
+<button class="btn btn-warning btn-full" onclick="openModal('modal-hrs-add')">⏰ Coger horas</button>
+<button class="btn btn-ghost btn-full" onclick="openModal('modal-hrs-email')">📧 Notificar</button>
+</div>
+<div class="card">
+<div class="card-title">Registros del mes</div>
+<div id="hrs-log"><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px 0">Sin registros este mes</div></div>
+</div>
+<div class="card">
+<div class="card-title">Historial mensual</div>
+<div id="hrs-history"><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px 0">Sin historial</div></div>
+</div>
+</div>
+<!-- ═══ AJUSTES ═══ -->
+<div id="tab-cfg" class="tab-panel">
+<div class="section-title">Ajustes</div>
+<div class="section-sub">Configuración y copia de seguridad</div>
+<div class="card">
+<div class="card-title">General</div>
+<div class="settings-row"><div class="sr-info"><div class="sr-label">Nombre</div><div class="sr-sub" id="cfg-name-disp">Francisco Núñez</div></div><div class="sr-action" onclick="openModal('modal-cfg-name')">Editar</div></div>
+<div class="settings-row"><div class="sr-info"><div class="sr-label">Email notificaciones</div><div class="sr-sub" id="cfg-email-disp">No configurado</div></div><div class="sr-action" onclick="openModal('modal-cfg-email')">Editar</div></div>
+</div>
+<div class="card">
+<div class="card-title">Kilómetros</div>
+<div class="settings-row"><div class="sr-info"><div class="sr-label">Ciudad base</div><div class="sr-sub" id="cfg-city-disp">Málaga</div></div><div class="sr-action" onclick="openModal('modal-cfg-city')">Editar</div></div>
+<div class="settings-row"><div class="sr-info"><div class="sr-label">Odómetro inicial</div><div class="sr-sub" id="cfg-km-init-disp">No configurado</div></div><div class="sr-action" onclick="openModal('modal-cfg-km')">Editar</div></div>
+<div class="settings-row"><div class="sr-info"><div class="sr-label">Patrón de trabajo</div><div class="sr-sub" id="cfg-pattern-disp">Mar, Mié, Jue (ruta)</div></div><div class="sr-action" onclick="openModal('modal-cfg-pattern')">Editar</div></div>
+</div>
+<div class="card">
+<div class="card-title">Vacaciones</div>
+<div class="settings-row"><div class="sr-info"><div class="sr-label">Días anuales</div><div class="sr-sub" id="cfg-vac-days-disp">22 días</div></div><div class="sr-action" onclick="openModal('modal-cfg-vac')">Editar</div></div>
+</div>
+<div class="card">
+<div class="card-title">Horas Comité</div>
+<div class="settings-row"><div class="sr-info"><div class="sr-label">Horas mensuales</div><div class="sr-sub" id="cfg-hrs-monthly-disp">25 horas</div></div><div class="sr-action" onclick="openModal('modal-cfg-hrs')">Editar</div></div>
+<div class="settings-row"><div class="sr-info"><div class="sr-label">Plantilla email notificación</div><div class="sr-sub" id="cfg-email-template-disp" style="font-size:11px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Estimado/a responsable…</div></div><div class="sr-action" onclick="openCfgEmailTemplate()">Editar</div></div>
+</div>
+<div class="card">
+<div class="card-title">Modo público</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5">Oculta los KM privados. Sin indicadores visibles. Solo se controla desde aquí.</div>
+<div class="switch-row" style="padding:0">
+<div><div class="switch-label">Activar modo público</div><div class="switch-sub">Los datos privados quedan ocultos</div></div>
+<label class="switch"><input type="checkbox" id="pub-mode-sw" onchange="togglePublicMode(this.checked)"><div class="switch-track"></div><div class="switch-thumb"></div></label>
+</div>
+</div>
+<div class="card">
+<div class="card-title">Copia de seguridad</div>
+<div class="settings-row" style="padding-top:0"><div class="sr-info"><div class="sr-label">Última copia</div><div class="sr-sub" id="cfg-backup-date">Nunca</div></div></div>
+<div class="grid2">
+<button class="btn btn-primary btn-full" onclick="doBackup()">💾 Hacer copia</button>
+<button class="btn btn-ghost btn-full" onclick="doImport()">📂 Importar</button>
+</div>
+<input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
+</div>
+<div class="card">
+<div class="card-title">Sincronización</div>
+<div class="alert-banner alert-success" style="margin-bottom:12px">
+<span class="ab-icon">☁️</span><span>Sincronización automática activa entre móvil y tablet vía Firebase.</span>
+</div>
+<div class="switch-row" style="padding:0">
+<div><div class="switch-label">Sincronización automática</div><div class="switch-sub" id="sync-status-cfg">Activa — cambios en tiempo real</div></div>
+<label class="switch"><input type="checkbox" id="sync-toggle" checked><div class="switch-track"></div><div class="switch-thumb"></div></label>
+</div>
+</div>
+<div class="card">
+<div class="card-title">Instalar app</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5">Instala HUB Personal como app en tu dispositivo.</div>
+<button class="btn btn-primary btn-full" id="btn-install-pwa" style="display:none" onclick="installPWA()">📲 Instalar en este dispositivo</button>
+<div style="font-size:12px;color:var(--text3);margin-top:8px">Si el botón no aparece: menú del navegador → "Añadir a pantalla de inicio"</div>
+</div>
+<div class="card">
+<div class="card-title" style="color:var(--accent4)">Zona peligrosa</div>
+<button class="btn btn-red-soft btn-full" onclick="confirmReset()">🗑️ Borrar todos los datos</button>
+</div>
+<div style="text-align:center;padding:18px 0;color:var(--text3);font-size:11px">
+HUB Personal v1.4.0 · Abril 2026<br>Datos almacenados localmente · Sync Firebase
+</div>
+</div>
+</div><!-- /content -->
+<!-- TABS -->
+<div id="tabs">
+<button class="tab-btn active" onclick="switchTab('dash')" id="tbtn-dash"><span class="icon">🏠</span><span>Inicio</span></button>
+<button class="tab-btn" onclick="switchTab('km')" id="tbtn-km"><span class="icon">🚗</span><span>KM</span></button>
+<button class="tab-btn" onclick="switchTab('vac')" id="tbtn-vac"><span class="icon">🏖️</span><span>Vacaciones</span></button>
+<button class="tab-btn" onclick="switchTab('hrs')" id="tbtn-hrs"><span class="icon">🏛️</span><span>Comité</span></button>
+<button class="tab-btn" onclick="switchTab('cfg')" id="tbtn-cfg"><span class="icon">⚙️</span><span>Ajustes</span></button>
+</div>
 </div><!-- /app -->
-
 <div id="toast"></div>
-
 <!-- ═══════════ MODALES ═══════════ -->
 <div class="modal-overlay" id="modal-ocr"><div class="modal-box"><div class="modal-handle"></div><div class="modal-title">📷 Leer odómetro</div><div id="ocr-preview-wrap"><img id="ocr-preview-img" alt="preview"><div id="ocr-status">Toca "Abrir cámara" para hacer la foto</div></div><div id="ocr-result-box"><div class="ocr-val" id="ocr-odometer-val">—</div><div class="ocr-lbl">Odómetro total (km)</div><div class="ocr-val" id="ocr-partial-val" style="font-size:20px;color:var(--accent);margin-top:6px">—</div><div class="ocr-lbl">Parcial trayecto (km)</div></div><div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn btn-primary btn-full" onclick="openCamera()">📷 Abrir cámara</button><button class="btn btn-ghost btn-full" onclick="openGallery()">🖼️ Galería</button></div><input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="handleOcrImage(event)"><input type="file" id="gallery-input" accept="image/*" style="display:none" onchange="handleOcrImage(event)"><div id="ocr-confirm-section" style="display:none"><div class="divider"></div><div class="input-group"><label>Odómetro total (obligatorio)</label><input type="number" id="ocr-odo-confirm" inputmode="numeric" placeholder="ej. 41664"></div><div class="input-group"><label>Parcial trayecto (opcional)</label><input type="number" id="ocr-partial-confirm" inputmode="decimal" step="0.1" placeholder="ej. 18.3"></div><div class="input-group"><label>Fecha</label><input type="date" id="ocr-date-confirm"></div><div class="input-group"><label>Ciudad de origen</label><input type="text" id="ocr-origin-confirm" placeholder="Málaga"></div><div class="input-group"><label>Destino / Motivo (opcional)</label><input type="text" id="ocr-dest-confirm" placeholder="ej. Jerez"></div><div class="switch-row"><div><div class="switch-label">🔐 KM privados</div><div class="switch-sub">No aparecen en XLS</div></div><label class="switch"><input type="checkbox" id="ocr-private-toggle"><div class="switch-track"></div><div class="switch-thumb"></div></label></div><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-ghost btn-full" onclick="closeModal('modal-ocr')">Cancelar</button><button class="btn btn-primary btn-full" onclick="saveOcrEntry()">Guardar</button></div></div></div></div>
-
 <div class="modal-overlay" id="modal-km-add"><div class="modal-box"><div class="modal-handle"></div><div class="modal-title">🚗 Añadir KM manual</div><div class="input-group"><label>Odómetro total (km) *</label><input type="number" id="km-odo-input" placeholder="ej. 41664" inputmode="numeric"></div><div class="input-group"><label>Fecha *</label><input type="date" id="km-date-input"></div><div class="input-group"><label>Ciudad de origen</label><input type="text" id="km-origin-input" placeholder="Málaga"></div><div class="input-group"><label>Destino / Motivo</label><input type="text" id="km-dest-input" placeholder="ej. Visita Jerez"></div><div class="input-group"><label>KM del trayecto (opcional)</label><input type="number" id="km-partial-input" placeholder="ej. 453" inputmode="numeric"></div><div class="switch-row"><div><div class="switch-label">🔐 KM privados</div><div class="switch-sub">No aparecen en XLS</div></div><label class="switch"><input type="checkbox" id="km-private-toggle"><div class="switch-track"></div><div class="switch-thumb"></div></label></div><hr class="divider"><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-full" onclick="closeModal('modal-km-add')">Cancelar</button><button class="btn btn-primary btn-full" onclick="addKmEntry()">Guardar</button></div></div></div>
-
 <div class="modal-overlay" id="modal-km-edit"><div class="modal-box"><div class="modal-handle"></div><div class="modal-title">✏️ Editar registro KM</div><input type="hidden" id="km-edit-id"><div class="input-group"><label>Odómetro total (km) *</label><input type="number" id="km-edit-odo" inputmode="numeric"></div><div class="input-group"><label>Fecha *</label><input type="date" id="km-edit-date"></div><div class="input-group"><label>Ciudad de origen</label><input type="text" id="km-edit-origin"></div><div class="input-group"><label>Destino / Motivo</label><input type="text" id="km-edit-dest"></div><div class="input-group"><label>KM del trayecto</label><input type="number" id="km-edit-partial" inputmode="numeric"></div><div class="switch-row"><div><div class="switch-label">🔐 KM privados</div></div><label class="switch"><input type="checkbox" id="km-edit-private"><div class="switch-track"></div><div class="switch-thumb"></div></label></div><hr class="divider"><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-full" onclick="closeModal('modal-km-edit')">Cancelar</button><button class="btn btn-primary btn-full" onclick="saveKmEdit()">Guardar</button></div></div></div>
-
 <div class="modal-overlay" id="modal-vac-add"><div class="modal-box"><div class="modal-handle"></div><div class="modal-title">🏖️ Añadir vacaciones</div><div class="input-group"><label>Fecha inicio</label><input type="date" id="vac-start-input"></div><div class="input-group"><label>Fecha fin</label><input type="date" id="vac-end-input"></div><div class="input-group"><label>Días laborables <span style="color:var(--text3);font-weight:400;font-size:10px">— se calcula solo</span></label><input type="number" id="vac-days-manual" placeholder="Se calcula automáticamente" inputmode="numeric" min="1"></div><div id="vac-add-preview" style="font-size:12px;color:var(--accent2);margin:-4px 0 8px;display:none">📅 <span id="vac-add-preview-text"></span></div><div class="input-group"><label>Nota</label><input type="text" id="vac-note-input" placeholder="ej. Semana Santa..."></div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-full" onclick="closeModal('modal-vac-add')">Cancelar</button><button class="btn btn-success btn-full" onclick="addVacPeriod()">Guardar</button></div></div></div>
-
 <div class="modal-overlay" id="modal-vac-edit"><div class="modal-box"><div class="modal-handle"></div><div class="modal-title">✏️ Editar vacaciones</div><input type="hidden" id="vac-edit-id"><div class="input-group"><label>Fecha inicio</label><input type="date" id="vac-edit-start"></div><div class="input-group"><label>Fecha fin</label><input type="date" id="vac-edit-end"></div><div class="input-group"><label>Días laborables</label><input type="number" id="vac-edit-days" inputmode="numeric" min="1"></div><div class="input-group"><label>Nota</label><input type="text" id="vac-edit-note"></div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-full" onclick="closeModal('modal-vac-edit')">Cancelar</button><button class="btn btn-success btn-full" onclick="saveVacEdit()">Guardar</button></div></div></div>
-
 <div class="modal-overlay" id="modal-worked-add"><div class="modal-box"><div class="modal-handle"></div><div class="modal-title">🛠️ Día trabajado en festivo/finde</div><div class="input-group"><label>Fecha trabajada</label><input type="date" id="worked-date-input"></div><div class="input-group"><label>Motivo / Nota</label><input type="text" id="worked-reason-input" placeholder="ej. Guardia fin de semana"></div><div class="alert-banner alert-warning" style="margin-bottom:10px"><span class="ab-icon">⚡</span><span>Se añade a tu bolsa y se recupera <strong>antes</strong> que vacaciones ordinarias.</span></div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-full" onclick="closeModal('modal-worked-add')">Cancelar</button><button class="btn btn-warning btn-full" onclick="addWorkedDay()">Añadir</button></div></div></div>
-
 <div class="modal-overlay" id="modal-hrs-add"><div class="modal-box"><div class="modal-handle"></div><div class="modal-title">⏰ Registrar horas comité</div><div class="input-group"><label>Horas *</label><input type="number" id="hrs-amount-input" placeholder="ej. 2" step="0.5" inputmode="decimal"></div><div class="input-group"><label>Fecha *</label><input type="date" id="hrs-date-input"></div><div class="input-group"><label>Motivo / Reunión</label><input type="text" id="hrs-reason-input" placeholder="ej. Negociación convenio"></div><div class="switch-row"><div><div class="switch-label">📧 Enviar notificación</div><div class="switch-sub">Abrirá tu cliente de correo</div></div><label class="switch"><input type="checkbox" id="hrs-send-email-toggle" checked><div class="switch-track"></div><div class="switch-thumb"></div></label></div><hr class="divider"><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-full" onclick="closeModal('modal-hrs-add')">Cancelar</button><button class="btn btn-warning btn-full" onclick="addHrsEntry()">Guardar</button></div></div></div>
-
 <div class="modal-overlay" id="modal-hrs-edit"><div class="modal-box"><div class="modal-handle"></div><div class="modal-title">✏️ Editar horas comité</div><input type="hidden" id="hrs-edit-id"><div class="input-group"><label>Horas *</label><input type="number" id="hrs-edit-amount" step="0.5" inputmode="decimal"></div><div class="input-group"><label>Fecha *</label><input type="date" id="hrs-edit-date"></div><div class="input-group"><label>Motivo</label><input type="text" id="hrs-edit-reason"></div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-full" onclick="closeModal('modal-hrs-edit')">Cancelar</button><button class="btn btn-warning btn-full" onclick="saveHrsEdit()">Guardar</button></div></div></div>
-
 <div class="modal-overlay" id="modal-hrs-email"><div class="modal-box"><div class="modal-handle"></div><div class="modal-title">📧 Notificación horas</div><div class="input-group"><label>Email del responsable</label><input type="email" id="hrs-email-to" placeholder="jefe@empresa.com"></div><div class="input-group"><label>Horas totales a notificar</label><input type="number" id="hrs-email-hours" placeholder="ej. 8" step="0.5" inputmode="decimal" oninput="updateEmailPreview()"></div><div class="input-group"><label>Fecha(s)</label><input type="text" id="hrs-email-fechas" placeholder="ej. 30 de marzo y 1 de abril de 2026" oninput="updateEmailPreview()"></div><div class="input-group"><label>Vista previa — editable</label><textarea id="hrs-email-preview" style="font-size:12px;line-height:1.6;color:var(--text2);min-height:140px"></textarea></div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-full" onclick="closeModal('modal-hrs-email')">Cancelar</button><button class="btn btn-primary btn-full" onclick="sendHrsEmail()">Abrir correo</button></div></div></div>
-
 <div class="modal-overlay" id="modal-cfg-name"><div class="modal-box"><div class="modal-handle"></div><div class="modal-title">✏️ Nombre</div><div class="input-group"><label>Nombre completo</label><input type="text" id="cfg-name-input" placeholder="Francisco Núñez"></div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-full" onclick="closeModal('modal-cfg-name')">Cancelar</button><button class="btn btn-primary btn-full" onclick="saveCfgName()">Guardar</button></div></div></div>
 <div class="modal-overlay" id="modal-cfg-email"><div class="modal-box"><div class="modal-handle"></div><div class="modal-title">📧 Email</div><div class="input-group"><label>Email responsable</label><input type="email" id="cfg-email-input" placeholder="jefe@empresa.com"></div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-full" onclick="closeModal('modal-cfg-email')">Cancelar</button><button class="btn btn-primary btn-full" onclick="saveCfgEmail()">Guardar</button></div></div></div>
 <div class="modal-overlay" id="modal-cfg-city"><div class="modal-box"><div class="modal-handle"></div><div class="modal-title">📍 Ciudad base</div><div class="input-group"><label>Ciudad habitual de inicio</label><input type="text" id="cfg-city-input" placeholder="Málaga"></div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-full" onclick="closeModal('modal-cfg-city')">Cancelar</button><button class="btn btn-primary btn-full" onclick="saveCfgCity()">Guardar</button></div></div></div>
@@ -356,7 +329,8 @@
 <div class="modal-overlay" id="modal-cfg-pattern"><div class="modal-box"><div class="modal-handle"></div><div class="modal-title">📅 Patrón de trabajo en ruta</div><div style="color:var(--text2);font-size:13px;margin-bottom:14px">Selecciona los días que normalmente haces ruta.</div><div id="pattern-day-picker" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"></div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-full" onclick="closeModal('modal-cfg-pattern')">Cancelar</button><button class="btn btn-primary btn-full" onclick="saveCfgPattern()">Guardar</button></div></div></div>
 <div class="modal-overlay" id="modal-cfg-vac"><div class="modal-box"><div class="modal-handle"></div><div class="modal-title">🏖️ Días de vacaciones</div><div class="input-group"><label>Días anuales</label><input type="number" id="cfg-vac-input" placeholder="22" inputmode="numeric"></div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-full" onclick="closeModal('modal-cfg-vac')">Cancelar</button><button class="btn btn-primary btn-full" onclick="saveCfgVac()">Guardar</button></div></div></div>
 <div class="modal-overlay" id="modal-cfg-hrs"><div class="modal-box"><div class="modal-handle"></div><div class="modal-title">🏛️ Horas mensuales</div><div class="input-group"><label>Horas disponibles al mes</label><input type="number" id="cfg-hrs-input" placeholder="25" inputmode="numeric"></div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-full" onclick="closeModal('modal-cfg-hrs')">Cancelar</button><button class="btn btn-primary btn-full" onclick="saveCfgHrs()">Guardar</button></div></div></div>
-
+<!-- MODAL: Plantilla email horas comité -->
+<div class="modal-overlay" id="modal-cfg-email-template"><div class="modal-box"><div class="modal-handle"></div><div class="modal-title">✉️ Plantilla email comité</div><div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5">Usa <strong>{{horas}}</strong> para las horas, <strong>{{fechas}}</strong> para la fecha y <strong>{{nombre}}</strong> para tu nombre. Se sustituyen automáticamente al enviar.</div><div class="input-group"><label>Cuerpo del mensaje</label><textarea id="cfg-email-template-input" style="font-size:12px;line-height:1.6;color:var(--text2);min-height:180px"></textarea></div><div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn btn-ghost btn-full" onclick="resetEmailTemplate()">↺ Restaurar por defecto</button></div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-full" onclick="closeModal('modal-cfg-email-template')">Cancelar</button><button class="btn btn-primary btn-full" onclick="saveCfgEmailTemplate()">Guardar</button></div></div></div>
 <!-- SCRIPTS — orden obligatorio: core primero, luego módulos -->
 <script src="hub-core.js"></script>
 <script src="hub-km.js"></script>

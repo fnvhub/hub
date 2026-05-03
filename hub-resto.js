@@ -180,6 +180,22 @@ function vacCalNext(){ vacCalDate.setMonth(vacCalDate.getMonth()+1); renderVacCa
 // ════════════════════════════
 // ── HORAS COMITÉ ──
 // ════════════════════════════
+
+// Plantilla por defecto del email de notificación
+const EMAIL_TEMPLATE_DEFAULT = `Estimado/a responsable,\n\nPor medio del presente escrito, le comunico el uso de {{horas}} hora(s) del crédito horario sindical correspondiente{{fechas}}.\n\nQuedo a su disposición para cualquier aclaración.\n\nAtentamente,\n{{nombre}}`;
+
+function getEmailTemplate() {
+  return state.config.emailTemplate || EMAIL_TEMPLATE_DEFAULT;
+}
+
+function buildEmailBody(hours, fechas, name) {
+  const template = getEmailTemplate();
+  return template
+    .replace('{{horas}}', hours || '__')
+    .replace('{{fechas}}', fechas ? ' a los días ' + fechas : '')
+    .replace('{{nombre}}', name || 'Francisco Núñez');
+}
+
 function addHrsEntry() {
   const amount = parseFloat(document.getElementById('hrs-amount-input').value);
   const date   = document.getElementById('hrs-date-input').value;
@@ -300,8 +316,7 @@ function updateEmailPreview() {
   const hours  = document.getElementById('hrs-email-hours').value;
   const fechas = document.getElementById('hrs-email-fechas').value;
   const name   = state.config.name||'Francisco Núñez';
-  document.getElementById('hrs-email-preview').value =
-    `Estimado/a responsable,\n\nPor medio del presente escrito, le comunico el uso de ${hours||'__'} hora(s) del crédito horario sindical correspondiente${fechas?' a los días '+fechas:''}.\n\nQuedo a su disposición para cualquier aclaración.\n\nAtentamente,\n${name}`;
+  document.getElementById('hrs-email-preview').value = buildEmailBody(hours, fechas, name);
 }
 
 function sendHrsEmail() {
@@ -316,8 +331,8 @@ function sendQuickHrsEmail(amount, date, reason) {
   const name    = state.config.name||'Francisco Núñez';
   const to      = state.config.email||'';
   const subject = encodeURIComponent('Comunicación uso horas comité');
-  const body    = encodeURIComponent(`Estimado/a responsable,\n\nLe comunico el uso de ${amount} hora(s) del crédito horario sindical el día ${fmtDate(date)}${reason?' — '+reason:''}.\n\nAtentamente,\n${name}`);
-  window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+  const body    = buildEmailBody(amount, fmtDate(date) + (reason ? ' — ' + reason : ''), name);
+  window.location.href = `mailto:${to}?subject=${subject}&body=${encodeURIComponent(body)}`;
 }
 
 // ════════════════════════════
@@ -334,6 +349,33 @@ function renderCfg() {
   const pattern = state.config.routeDays||[2,3,4];
   const dayFull = ['','Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
   document.getElementById('cfg-pattern-disp').textContent    = pattern.length>0 ? pattern.map(d=>dayFull[d]).join(', ')+' (ruta)' : 'Sin patrón';
+
+  // Mostrar resumen de plantilla de email
+  const templateDisp = document.getElementById('cfg-email-template-disp');
+  if (templateDisp) {
+    const tpl = getEmailTemplate();
+    templateDisp.textContent = tpl.length > 60 ? tpl.slice(0,60)+'…' : tpl;
+  }
+}
+
+function openCfgEmailTemplate() {
+  const ta = document.getElementById('cfg-email-template-input');
+  if (ta) ta.value = getEmailTemplate();
+  openModal('modal-cfg-email-template');
+}
+
+function saveCfgEmailTemplate() {
+  const val = document.getElementById('cfg-email-template-input').value.trim();
+  state.config.emailTemplate = val || EMAIL_TEMPLATE_DEFAULT;
+  save(); closeModal('modal-cfg-email-template'); renderCfg();
+  toast('✅ Plantilla guardada');
+}
+
+function resetEmailTemplate() {
+  if (!confirm('¿Restaurar la plantilla por defecto?')) return;
+  state.config.emailTemplate = EMAIL_TEMPLATE_DEFAULT;
+  document.getElementById('cfg-email-template-input').value = EMAIL_TEMPLATE_DEFAULT;
+  toast('✅ Plantilla restaurada');
 }
 
 function saveCfgName()  { state.config.name=document.getElementById('cfg-name-input').value.trim()||'Francisco Núñez'; save(); closeModal('modal-cfg-name'); renderCfg(); toast('✅ Nombre guardado'); }
