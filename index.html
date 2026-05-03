@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#0d0f14">
 <meta name="apple-mobile-web-app-title" content="HUB Personal">
 <link rel="manifest" href="manifest.json">
-<title>HUB Personal v1.4.0</title>
+<title>HUB Personal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="hub.css">
@@ -65,7 +65,7 @@ window.setSyncEnabled(true);
 <div id="app">
 <!-- HEADER -->
 <div id="header">
-<div id="header-title">HUB <span>Personal</span><span class="version-badge">v1.4.0</span></div>
+<div id="header-title">HUB <span>Personal</span><span class="version-badge" id="app-version">…</span></div>
 <div style="text-align:center;flex:1">
 <div id="header-date" style="font-size:11px;color:var(--text2);font-weight:500"></div>
 <div id="sync-status" style="font-size:10px;color:var(--text3);margin-top:1px">☁️ Sync activado</div>
@@ -298,7 +298,7 @@ style="transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)"/>
 <button class="btn btn-red-soft btn-full" onclick="confirmReset()">🗑️ Borrar todos los datos</button>
 </div>
 <div style="text-align:center;padding:18px 0;color:var(--text3);font-size:11px">
-HUB Personal v1.4.0 · Abril 2026<br>Datos almacenados localmente · Sync Firebase
+HUB Personal <span id="app-version-footer">…</span> · <span id="app-version-date">2026</span><br>Datos almacenados localmente · Sync Firebase
 </div>
 </div>
 </div><!-- /content -->
@@ -331,6 +331,25 @@ HUB Personal v1.4.0 · Abril 2026<br>Datos almacenados localmente · Sync Fireba
 <div class="modal-overlay" id="modal-cfg-hrs"><div class="modal-box"><div class="modal-handle"></div><div class="modal-title">🏛️ Horas mensuales</div><div class="input-group"><label>Horas disponibles al mes</label><input type="number" id="cfg-hrs-input" placeholder="25" inputmode="numeric"></div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-full" onclick="closeModal('modal-cfg-hrs')">Cancelar</button><button class="btn btn-primary btn-full" onclick="saveCfgHrs()">Guardar</button></div></div></div>
 <!-- MODAL: Plantilla email horas comité -->
 <div class="modal-overlay" id="modal-cfg-email-template"><div class="modal-box"><div class="modal-handle"></div><div class="modal-title">✉️ Plantilla email comité</div><div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5">Usa <strong>{{horas}}</strong> para las horas, <strong>{{fechas}}</strong> para la fecha y <strong>{{nombre}}</strong> para tu nombre. Se sustituyen automáticamente al enviar.</div><div class="input-group"><label>Cuerpo del mensaje</label><textarea id="cfg-email-template-input" style="font-size:12px;line-height:1.6;color:var(--text2);min-height:180px"></textarea></div><div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn btn-ghost btn-full" onclick="resetEmailTemplate()">↺ Restaurar por defecto</button></div><div style="display:flex;gap:8px"><button class="btn btn-ghost btn-full" onclick="closeModal('modal-cfg-email-template')">Cancelar</button><button class="btn btn-primary btn-full" onclick="saveCfgEmailTemplate()">Guardar</button></div></div></div>
+<!-- Carga versión desde version.json -->
+<script>
+fetch('version.json').then(r=>r.json()).then(v=>{
+  const ver = 'v'+v.version_actual;
+  const el  = document.getElementById('app-version');
+  const elF = document.getElementById('app-version-footer');
+  const elD = document.getElementById('app-version-date');
+  if(el)  el.textContent  = ver;
+  if(elF) elF.textContent = ver;
+  if(elD && v.historial && v.historial[0]) {
+    const fecha = new Date(v.historial[0].fecha);
+    elD.textContent = fecha.toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+  }
+  document.title = 'HUB Personal '+ver;
+}).catch(()=>{
+  const els=[document.getElementById('app-version'),document.getElementById('app-version-footer')];
+  els.forEach(e=>{ if(e) e.textContent=''; });
+});
+</script>
 <!-- SCRIPTS — orden obligatorio: core primero, luego módulos -->
 <script src="hub-core.js"></script>
 <script src="hub-km.js"></script>
