@@ -197,23 +197,28 @@ function buildEmailBody(hours, fechas, name) {
 }
 
 function addHrsEntry() {
-  const amount = parseFloat(document.getElementById('hrs-amount-input').value);
-  const date   = document.getElementById('hrs-date-input').value;
-  const reason = document.getElementById('hrs-reason-input').value.trim();
-  const sendMail = document.getElementById('hrs-send-email-toggle').checked;
+  const amount      = parseFloat(document.getElementById('hrs-amount-input').value);
+  const date        = document.getElementById('hrs-date-input').value;
+  const reason      = document.getElementById('hrs-reason-input').value.trim();
+  const meetingDate = document.getElementById('hrs-meeting-date-input').value;
+  const meetingTime = document.getElementById('hrs-meeting-time-input').value;
+  const sendMail    = document.getElementById('hrs-send-email-toggle').checked;
   if (!amount||!date) { toast('⚠️ Horas y fecha son obligatorios'); return; }
   const monthly = state.config.hrsMonthly||25;
   const mk      = date.slice(0,7);
   const usedNow = state.hrs.entries.filter(e=>e.date.startsWith(mk)).reduce((s,e)=>s+e.amount,0);
   if (usedNow+amount>monthly) { toast(`⚠️ Superarías el límite de ${monthly}h este mes`); return; }
-  const newEntry = { id:uid(), date, amount, reason:reason||'' };
+  const newEntry = { id:uid(), date, amount, reason:reason||'', meetingDate:meetingDate||'', meetingTime:meetingTime||'' };
   state.hrs.entries.push(newEntry);
   state.hrs.entries.sort((a,b)=>a.date.localeCompare(b.date));
   document.getElementById('hrs-reason-input').value='';
+  document.getElementById('hrs-meeting-date-input').value='';
+  document.getElementById('hrs-meeting-time-input').value='';
   save(); closeModal('modal-hrs-add');
   toast(`✅ ${amount}h registradas`);
-  addActivity({ icon:'🏛️', text:`${amount}h comité: ${reason||fmtDate(date)}`, date, refId:newEntry.id });
-  if (sendMail && state.config.email) sendQuickHrsEmail(amount, date, reason);
+  const meetingInfo = meetingDate ? ` — reunión ${fmtDate(meetingDate)}${meetingTime?' '+meetingTime:''}` : '';
+  addActivity({ icon:'🏛️', text:`${amount}h comité: ${reason||fmtDate(date)}${meetingInfo}`, date, refId:newEntry.id });
+  if (sendMail && state.config.email) sendQuickHrsEmail(amount, date, reason, meetingDate, meetingTime);
   renderHrs(); renderDash();
 }
 
@@ -284,7 +289,7 @@ function renderHrs() {
         <div class="hora-icon" style="background:rgba(249,169,75,.15)">🏛️</div>
         <div class="hora-body">
           <div class="hora-title">${e.reason||'Horas comité'}</div>
-          <div class="hora-date">${fmtDate(e.date)}</div>
+          <div class="hora-date">${fmtDate(e.date)}${e.meetingDate?' · 📅 Reunión: '+fmtDate(e.meetingDate)+(e.meetingTime?' '+e.meetingTime:''):''}</div>
         </div>
         <div style="text-align:right">
           <div class="hora-amount" style="color:var(--accent3)">${e.amount}h</div>
@@ -327,11 +332,14 @@ function sendHrsEmail() {
   closeModal('modal-hrs-email');
 }
 
-function sendQuickHrsEmail(amount, date, reason) {
+function sendQuickHrsEmail(amount, date, reason, meetingDate, meetingTime) {
   const name    = state.config.name||'Francisco Núñez';
   const to      = state.config.email||'';
   const subject = encodeURIComponent('Comunicación uso horas comité');
-  const body    = buildEmailBody(amount, fmtDate(date) + (reason ? ' — ' + reason : ''), name);
+  let fechaStr  = fmtDate(date);
+  if (meetingDate) fechaStr += ` — reunión: ${fmtDate(meetingDate)}${meetingTime?' a las '+meetingTime:''}`;
+  if (reason) fechaStr += ` (${reason})`;
+  const body = buildEmailBody(amount, fechaStr, name);
   window.location.href = `mailto:${to}?subject=${subject}&body=${encodeURIComponent(body)}`;
 }
 

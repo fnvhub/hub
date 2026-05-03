@@ -1,12 +1,18 @@
 {
   "proyecto": "HUB Personal",
-  "version_actual": "1.4.1",
+  "version_actual": "1.4.2",
   "historial": [
+    {
+      "version": "1.4.2",
+      "fecha": "2026-05-03",
+      "archivos": ["hub-resto.js", "index.html"],
+      "cambios": "Al registrar horas de comité se pueden indicar la fecha y hora de la reunión. Se muestran en el historial del mes y se incluyen en el email de notificación automático."
+    },
     {
       "version": "1.4.1",
       "fecha": "2026-05-03",
       "archivos": ["hub-resto.js", "index.html"],
-      "cambios": "Plantilla del email de notificación de horas sindicales editable desde Ajustes. Se puede personalizar el cuerpo del mensaje con marcadores {{horas}}, {{fechas}} y {{nombre}}. Botón para restaurar el texto por defecto."
+      "cambios": "Plantilla del email de notificación de horas sindicales editable desde Ajustes. Marcadores {{horas}}, {{fechas}} y {{nombre}}. Botón para restaurar texto por defecto."
     },
     {
       "version": "1.4.0",
